@@ -65,9 +65,9 @@ struct ThreadTopology{
     for(unsigned level = 0 ; ; ++level){
       RunCpuid(11,level,eax,ebx,ecx,edx);
 
-      if(level != (ecx&0xFF)) throw std::logic_error("EDX inconsistent with Intel's description");
       const unsigned level_type = ecx>>8 & 0xF;
       if(level_type==0) break;
+      if(level != (ecx&0xFF)) throw std::logic_error("EDX inconsistent with Intel's description");
       shift_to_next_level.push_back(eax&0x1F);
     }
     std::vector<unsigned> loc_level_ids; loc_level_ids.reserve(3);

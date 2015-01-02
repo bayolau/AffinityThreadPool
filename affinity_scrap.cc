@@ -99,18 +99,6 @@ int main (int argc, const char* argv[]){
     pthread_setaffinity_np(threads[ii].native_handle(),sizeof(cpu_set_t),&cpu_sets[ii]);
   }
 */
-  bayolau::threadsafe::Queue<int> q;
-  for(size_t ii=0;ii<10;++ii){
-    q.push(ii);
-  }
-
-  while(!q.empty()){
-    auto ptr = q.pop();
-    if(ptr){
-      std::cout << *ptr << std::endl;
-    }
-  }
-
 
   start_signal.set_value();
   for(auto& entry: threads){
@@ -131,9 +119,14 @@ int main (int argc, const char* argv[]){
     std::cout << std::endl;
   }
 
-  bayolau::affinity::ThreadPool::Instance();
+  {
+    bayolau::affinity::ThreadPool::Instance();
 
-  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
-  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
-  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+    std::cout << "thread pool has " <<  bayolau::affinity::ThreadPool::Instance().num_threads() << std::endl;;
+
+    bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+    bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+    bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+  }
+  std::cout << "exiting " << std::endl;
 }

@@ -32,6 +32,7 @@ SOFTWARE.
 #include <atomic>
 #include <utility>
 #include "Queue.h"
+#include "CpuTopology.h"
 
 namespace bayolau {
 namespace affinity {
@@ -62,6 +63,13 @@ struct ThreadPool{
     work_queue_.push(work);
   }
 
+/**
+  * register a unit of work to be run
+  */
+  unsigned num_threads() const noexcept {
+    return threads_.size();
+  }
+
   ~ThreadPool() {
     finished_=true;
     for(auto&entry : threads_){
@@ -80,19 +88,19 @@ private:
     , threads_()
     , start_flag_()
   {
-    const unsigned num_threads = std::thread::hardware_concurrency();
+    const unsigned num_threads = bayolau::affinity::CpuTopology::Instance().num_cores();
     threads_.reserve(num_threads);
     std::shared_future<void> sf = start_flag_.get_future();
     for(unsigned tt = 0 ; tt < num_threads ; ++tt){
       threads_.emplace_back(&ThreadPool::Worker,this,sf);
     }
-    //set affinity here
+    bayolau::affinity::CpuTopology::Instance().SetAffinity(threads_);
     start_flag_.set_value();
   }
 
   void Worker(std::shared_future<void> start) {
     start.wait();
-    while(!finished_) {
+    while(!finished_ or !work_queue_.empty()) {
       auto work_ptr = work_queue_.pop();
       if(work_ptr) {
         (*work_ptr)();

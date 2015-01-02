@@ -55,10 +55,14 @@ struct ThreadTopology{
     unsigned eax,ebx,ecx,edx;
 
     RunCpuid(0,0,eax,ebx,ecx,edx);
-    if( eax < 11 ) throw std::runtime_error("CPUID does not support 2xAPIC");
-    if( strncmp(reinterpret_cast<char*>(&ebx),"Genu",4)) throw std::runtime_error("non-Intel cpu not supported");
-    if( strncmp(reinterpret_cast<char*>(&ecx),"ntel",4)) throw std::runtime_error("non-Intel cpu not supported");
-    if( strncmp(reinterpret_cast<char*>(&edx),"ineI",4)) throw std::runtime_error("non-Intel cpu not supported");
+    if( eax < 11 )
+      throw std::runtime_error("CPUID does not support 2xAPIC");
+    if( strncmp(reinterpret_cast<char*>(&ebx),"Genu",4))
+      throw std::runtime_error("non-Intel cpu not supported");
+    if( strncmp(reinterpret_cast<char*>(&ecx),"ntel",4))
+      throw std::runtime_error("non-Intel cpu not supported");
+    if( strncmp(reinterpret_cast<char*>(&edx),"ineI",4))
+      throw std::runtime_error("non-Intel cpu not supported");
 
     // done this way to be more future proof
     std::vector<unsigned> shift_to_next_level(1,0);
@@ -66,8 +70,10 @@ struct ThreadTopology{
       RunCpuid(11,level,eax,ebx,ecx,edx);
 
       const unsigned level_type = ecx>>8 & 0xF;
-      if(level_type==0) break;
-      if(level != (ecx&0xFF)) throw std::logic_error("EDX inconsistent with Intel's description");
+      if(level_type==0)
+        break;
+      if(level != (ecx&0xFF))
+        throw std::logic_error("EDX inconsistent with Intel's description");
       shift_to_next_level.push_back(eax&0x1F);
     }
     std::vector<unsigned> loc_level_ids; loc_level_ids.reserve(3);
@@ -94,7 +100,8 @@ private:
   unsigned u2xapic_;
   bool valid_;
 
-  void RunCpuid(const unsigned a_in, const unsigned c_in, unsigned& a, unsigned& b, unsigned& c, unsigned& d){
+  void RunCpuid(const unsigned a_in, const unsigned c_in
+               , unsigned& a, unsigned& b, unsigned& c, unsigned& d){
     asm("cpuid" : "=a"(a), "=b"(b), "=c" (c), "=d"(d) : "a"(a_in), "c"(c_in));
   }
 };

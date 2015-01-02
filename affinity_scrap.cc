@@ -29,7 +29,9 @@ SOFTWARE.
 #include <map>
 #include <iostream>
 #include <future>
+
 #include "ThreadTopology.h"
+#include "Queue.h"
 
 /*
   This file is SCRAP work, quick and dirty stuff to test code.
@@ -88,13 +90,26 @@ int main (int argc, const char* argv[]){
   for(unsigned tt = 0 ; tt < num_threads; ++tt){
     threads.emplace_back(LogTopology,sf);
   }
-
+/*
   std::vector<cpu_set_t> cpu_sets(num_threads);
   for(unsigned ii = 0 ; ii < num_threads ; ++ii){
     CPU_ZERO(&cpu_sets[ii]);
     CPU_SET(ii,&cpu_sets[ii]);
     pthread_setaffinity_np(threads[ii].native_handle(),sizeof(cpu_set_t),&cpu_sets[ii]);
   }
+*/
+  bayolau::threadsafe::Queue<int> q;
+  for(size_t ii=0;ii<10;++ii){
+    q.push(ii);
+  }
+
+  while(!q.empty()){
+    auto ptr = q.try_pop();
+    if(ptr){
+      std::cout << *ptr << std::endl;
+    }
+  }
+
 
   start_signal.set_value();
   for(auto& entry: threads){

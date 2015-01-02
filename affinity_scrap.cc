@@ -28,6 +28,7 @@ SOFTWARE.
 #include <set>
 #include <map>
 #include <iostream>
+#include <future>
 #include "ThreadTopology.h"
 
 /*
@@ -50,8 +51,9 @@ std::set<int> collection;
 std::atomic<unsigned> n_logged;
 std::vector<bayolau::affinity::ThreadTopology> topologies;
 
-void LogTopology() {
+void LogTopology(std::shared_future<void> start_signal) {
   bayolau::affinity::ThreadTopology tp;
+  start_signal.wait();
   while(n_logged.load() != std::thread::hardware_concurrency()){
     try{
       tp.Acquire();
@@ -77,12 +79,24 @@ void LogTopology() {
 }
 
 int main (int argc, const char* argv[]){
+  const unsigned num_threads = std::thread::hardware_concurrency();
+  std::cout << "hardware concurrency " << num_threads << std::endl;
+  std::promise<void> start_signal;
+  std::shared_future<void> sf(start_signal.get_future());
   std::vector<std::thread> threads;
-  threads.reserve(std::thread::hardware_concurrency());
-  for(unsigned tt = 0 ; tt < std::thread::hardware_concurrency() ; ++tt){
-    threads.emplace_back(LogTopology);
+  threads.reserve(num_threads);
+  for(unsigned tt = 0 ; tt < num_threads; ++tt){
+    threads.emplace_back(LogTopology,sf);
   }
 
+  std::vector<cpu_set_t> cpu_sets(num_threads);
+  for(unsigned ii = 0 ; ii < num_threads ; ++ii){
+    CPU_ZERO(&cpu_sets[ii]);
+    CPU_SET(ii,&cpu_sets[ii]);
+    pthread_setaffinity_np(threads[ii].native_handle(),sizeof(cpu_set_t),&cpu_sets[ii]);
+  }
+
+  start_signal.set_value();
   for(auto& entry: threads){
     entry.join();
   }

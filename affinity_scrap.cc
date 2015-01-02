@@ -31,6 +31,7 @@ SOFTWARE.
 #include <future>
 
 #include "ThreadTopology.h"
+#include "ThreadPool.h"
 #include "Queue.h"
 
 /*
@@ -104,7 +105,7 @@ int main (int argc, const char* argv[]){
   }
 
   while(!q.empty()){
-    auto ptr = q.try_pop();
+    auto ptr = q.pop();
     if(ptr){
       std::cout << *ptr << std::endl;
     }
@@ -129,4 +130,10 @@ int main (int argc, const char* argv[]){
     for(const auto& apic: entry.second){ std::cout << " " << apic; }
     std::cout << std::endl;
   }
+
+  bayolau::affinity::ThreadPool::Instance();
+
+  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
+  bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
 }

@@ -28,6 +28,7 @@ SOFTWARE.
 #include <stdexcept>
 #include <vector>
 #include <cstring>
+#include <string>
 
 namespace bayolau {
 namespace affinity {
@@ -45,6 +46,24 @@ struct ThreadTopology{
       @return true if the instance contains a successfully snap shot of a hardware thread
    */
   bool valid() const noexcept { return valid_; }
+
+  /**
+      @return description of stream output operator
+   */
+  static const char* description(){ return "2xAPIC: logical_id core_id package_id ...";}
+  /**
+      write data to stream
+   */
+  friend std::ostream& operator<<(std::ostream& os, const ThreadTopology& in){
+    if( in.valid() ) {
+      os << in.u2xapic() << ":";
+      for(const auto& entry: in.level_ids()) { os << " " << entry; }
+    }
+    else {
+      os << "invalid toplogy data";
+    }
+    return os;
+  }
 
   /**
       Acquires 2xAPIC id and derive HT/core/package ID of the hardware thread carrying the execution.

@@ -9,20 +9,15 @@ The affinity aspect is motivated by performance issues I've seen in the past. Th
 
 Of course, the main motivation is that this is something I've been wanting to write for the sake of it for a long time.
 
-
-
 EXAMPLE:
 $g++ -std=c++11 -lpthread example.cc -o example
+
 $./example
+
 thread pool has 2 threads
+
 core idenfication 2xAPIC: logical_id core_id package_id ...
+
 worker's core toplogy 0: 0 0 0
-worker's core toplogy 0: 0 0 0
-worker's core toplogy 0: 0 0 0
-worker's core toplogy 0: 0 0 0
+
 worker's core toplogy 2: 0 1 0
-worker's core toplogy 0: 0 0 0
-worker's core toplogy 2: 0 1 0
-worker's core toplogy 0: 0 0 0
-worker's core toplogy 2: 0 1 0
-worker's core toplogy 0: 0 0 0

@@ -45,6 +45,14 @@ void PrintTopology(std::ostream&os){
   }
 }
 
+struct Adder {
+  Adder(int a, std::atomic<int>& b):val(a),adder(b){}
+  void operator()(){adder+=val;}
+private:
+  const int val;
+  std::atomic<int>& adder;
+};
+
 int main (int argc, const char* argv[]){
   using namespace bayolau::affinity;
   ThreadPool::Instance();
@@ -54,9 +62,9 @@ int main (int argc, const char* argv[]){
   std::cout << "core idenfication " << ThreadTopology::description() << std::endl;
 
   std::vector<typename ThreadPool::Functor> work(10);
-  std::atomic<int> sum;
+  std::atomic<int> sum(0);
   for(size_t ii = 0 ; ii < 10 ; ++ii){
-    work[ii] = std::bind(PrintTopology,std::ref(std::cout));
+    work[ii] = Adder(ii,sum);
   }
   ThreadPool::Instance().Schedule(work.begin(),work.end());
   std::this_thread::yield();
@@ -65,4 +73,6 @@ int main (int argc, const char* argv[]){
     ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
     std::this_thread::yield();
   }
+  ThreadPool::Instance().Wait();
+  std::cout << "sum " << sum.load() <<std::endl;
 }

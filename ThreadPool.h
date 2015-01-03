@@ -49,7 +49,7 @@ namespace affinity {
 
 class ThreadPool{
   /**
-    * a wrapper, if Functor. We use a non-callable functor as termination signal
+    * a wrapper of functor. We use a non-callable functor as termination signal
     */
   typedef typename std::function<void(void)> WorkPackage;
   static bool Terminate(const WorkPackage& wp){ return !static_cast<bool>(wp); }
@@ -82,7 +82,18 @@ public:
     * register a unit of work to be run
     */
   void Schedule(Functor work){
+    if( !work ) return;
     work_queue_.push(WorkPackage(work));
+  }
+
+
+  /**
+    * wait til all tasks are done. will be replaced by futures
+    */
+  void Wait()const{
+    while( !work_queue_.empty() ) {
+      std::this_thread::yield();
+    }
   }
 
   /**

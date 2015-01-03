@@ -34,8 +34,7 @@ namespace util {
 template<class Iterator> struct FilteredIterator;
 
 /**
-  * return a pair of iterators over a [begin,end) range, skipping elements evaluated to
-  * false for the predicate
+  * @return a pair of iterators over a [begin,end) range, skipping elements evaluated to false for the predicate
   */
 template<class Iterator, class Predicate>
 std::pair<FilteredIterator<Iterator>,FilteredIterator<Iterator> >

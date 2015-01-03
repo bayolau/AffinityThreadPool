@@ -36,7 +36,8 @@ namespace bayolau {
 namespace threadsafe {
 /**
   * A quick-and-dirty implementation of thread-safe queue.
-  * Will be REPLACED by a lock-free version
+  *
+  * Will be REPLACED by a lock-free version when infrasturcture is done
   */
 template<typename T>
 struct Queue{

@@ -38,10 +38,12 @@ namespace bayolau {
 namespace affinity {
 
 /**
-  * A TEMPORARY, quick-and-dirty thread pool
-  * affinity will be added
-  * exception safty will be enforced
+  * A quick-and-dirty thread pool implementation.
+  * A singleton is intialized with one thread pinned to one physical core.
+  * The scheduler takes a std::function<void(void)> callable as a work unit
+  *
   * advanced scheduling will be added
+  * exception safty will be flushed out after scheduling changes
   */
 
 struct ThreadPool{

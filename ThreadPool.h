@@ -42,76 +42,84 @@ namespace affinity {
   * A singleton is intialized with one thread pinned to one physical core.
   * The scheduler takes a std::function<void(void)> callable as a work unit
   *
+  * TODO
   * advanced scheduling will be added
   * exception safty will be flushed out after scheduling changes
   */
 
-struct ThreadPool{
-
-/**
-  * return the singleton instance, in my experience non-singleton would at
-  * some point lead to accidental nesting, leading to subtle performance
-  * decay, or even worst violating the number of threads set by ulimit
-  */
+class ThreadPool{
+  /**
+    * a wrapper, if Functor. We use a non-callable functor as termination signal
+    */
+  struct WorkPackage {
+    typedef std::function<void(void)> Functor;
+    WorkPackage():fcn_() {};
+    explicit WorkPackage(Functor fcn):fcn_(fcn) { }
+    bool terminate() const noexcept { return !fcn_; };
+    void operator()() { fcn_(); };
+  private:
+    Functor fcn_;
+  };
+public:
+  typedef typename WorkPackage::Functor Functor;
+  /**
+    * return the singleton instance, in my experience non-singleton would at
+    * some point lead to accidental nesting, leading to subtle performance
+    * decay, or even worst violating the number of threads set by ulimit
+    */
   static ThreadPool& Instance() {
     static ThreadPool instance; // this allocation is threadsafe for post-C++11 compiler
     return instance;
   }
 
-/**
-  * register a unit of work to be run
-  */
-  void Schedule(std::function<void(void)> work){
-    work_queue_.push(work);
+  /**
+    * register a unit of work to be run
+    */
+  void Schedule(Functor work){
+    work_queue_.push(WorkPackage(work));
   }
 
-/**
-  * register a unit of work to be run
-  */
+  /**
+    * register a unit of work to be run
+    */
   unsigned num_threads() const noexcept {
     return threads_.size();
   }
 
   ~ThreadPool() {
-    finished_=true;
+    for(auto&entry : threads_){
+      work_queue_.push(WorkPackage());
+    }
     for(auto&entry : threads_){
       entry.join();
     }
   }
 private:
-  std::atomic<bool> finished_;
-  bayolau::threadsafe::Queue< std::function<void(void)> > work_queue_;
+  bayolau::threadsafe::Queue< WorkPackage > work_queue_;
   std::vector<std::thread> threads_;
-  std::promise<void> start_flag_;
 
-  ThreadPool()
-    : finished_(false)
-    , work_queue_()
-    , threads_()
-    , start_flag_()
+  ThreadPool(): work_queue_(), threads_()
   {
-    const unsigned num_threads = bayolau::affinity::CpuTopology::Instance().num_cores();
+    const unsigned num_threads = CpuTopology::Instance().num_cores();
     threads_.reserve(num_threads);
-    std::shared_future<void> sf = start_flag_.get_future();
+    std::promise<void> start_flag;
+    std::shared_future<void> sf = start_flag.get_future();
     for(unsigned tt = 0 ; tt < num_threads ; ++tt){
       threads_.emplace_back(&ThreadPool::Worker,this,sf);
     }
-    bayolau::affinity::CpuTopology::Instance().SetAffinity(threads_);
-    start_flag_.set_value();
+    CpuTopology::Instance().SetAffinity(threads_);
+    start_flag.set_value();
   }
 
   void Worker(std::shared_future<void> start) {
     start.wait();
-    while(!finished_ or !work_queue_.empty()) {
-      auto work_ptr = work_queue_.pop();
-      if(work_ptr) {
+    for(bool work = true ; work ; ){
+      auto work_ptr = work_queue_.wait_and_pop();
+      work = !work_ptr->terminate();
+      if(work){
         (*work_ptr)();
       }
-      else {
-        // there can be other threads, eg helpers, running
-        std::this_thread::yield();
-      }
-    }
+    } 
   }
 };
 

@@ -47,7 +47,7 @@ struct Queue{
     DataPtr ptr( new T(std::move(val)) );
     std::lock_guard<std::mutex> lg(lk_);
     impl_.push_back(std::move(ptr));
-    cv_.notify_one();
+    cv_.notify_all();
   }
 
   /**
@@ -70,7 +70,7 @@ struct Queue{
     std::unique_lock<std::mutex> lg(lk_);
     cv_.wait(lg,[this]{return !impl_.empty();});
     DataPtr out(std::move(impl_.front()));
-    impl_.pop();
+    impl_.pop_front();
     return out;
   }
 

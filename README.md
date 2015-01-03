@@ -9,7 +9,8 @@ The affinity aspect is motivated by performance issues I've seen in the past. Th
 
 Of course, the main motivation is that this is something I've been wanting to write for the sake of it for a long time.
 
-EXAMPLE:
+EXAMPLE: see example.cc. needs to include only ThreadPool.h
+
 $g++ -std=c++11 -lpthread example.cc -o example
 
 $./example

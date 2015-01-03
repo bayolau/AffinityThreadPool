@@ -12,13 +12,3 @@ Of course, the main motivation is that this is something I've been wanting to wr
 EXAMPLE: see example.cc. needs to include only ThreadPool.h
 
 $g++ -std=c++11 -lpthread example.cc -o example
-
-$./example
-
-thread pool has 2 threads
-
-core idenfication 2xAPIC: logical_id core_id package_id ...
-
-worker's core toplogy 0: 0 0 0
-
-worker's core toplogy 2: 0 1 0

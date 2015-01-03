@@ -99,6 +99,9 @@ int main (int argc, const char* argv[]){
     pthread_setaffinity_np(threads[ii].native_handle(),sizeof(cpu_set_t),&cpu_sets[ii]);
   }
 */
+  std::vector<int> vv{1,2,3,4,5,6,7,8,9};
+  bayolau::threadsafe::Queue<int> qq;
+  qq.push(vv.begin(),vv.end());
 
   start_signal.set_value();
   for(auto& entry: threads){
@@ -123,6 +126,8 @@ int main (int argc, const char* argv[]){
     bayolau::affinity::ThreadPool::Instance();
 
     std::cout << "thread pool has " <<  bayolau::affinity::ThreadPool::Instance().num_threads() << std::endl;;
+    std::vector<std::function<void(void)>> haha(5,[]{std::cout << "batch" << std::endl;});
+    bayolau::affinity::ThreadPool::Instance().Schedule(haha.begin(),haha.end());
 
     bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});
     bayolau::affinity::ThreadPool::Instance().Schedule([]{std::cout << "working" << std::endl;});

@@ -29,6 +29,8 @@ SOFTWARE.
 #include <mutex>
 #include <memory>
 #include <utility>
+#include <iterator>
+#include <algorithm>
 
 namespace bayolau {
 namespace threadsafe {
@@ -41,13 +43,35 @@ struct Queue{
   using DataPtr = std::unique_ptr<T>;
 
   /**
-    * push value to the back of the queue
+    * push values to the back of the queue
+    * @return true if error occurs
     */
-  void push(T val) {
+  template<class Iterator>
+  bool push(Iterator begin, Iterator end){
+    const int64_t num_elements = std::distance(begin,end);
+    if(num_elements < 1) return true;
+    std::vector<DataPtr> ptrs(num_elements);
+    std::transform(begin, end, ptrs.begin(),[](const T&val){
+      return DataPtr(new T(val));
+    });
+
+    std::lock_guard<std::mutex> lg(lk_);
+    typedef std::move_iterator<typename std::vector<DataPtr>::iterator> MvIter;
+    impl_.insert(impl_.end(), MvIter(ptrs.begin()), MvIter(ptrs.end()));
+    cv_.notify_all();
+    return false;
+  }
+
+  /**
+    * push value to the back of the queue
+    * @return true if error occurs
+    */
+  bool push(T val) {
     DataPtr ptr( new T(std::move(val)) );
     std::lock_guard<std::mutex> lg(lk_);
     impl_.push_back(std::move(ptr));
     cv_.notify_all();
+    return false;
   }
 
   /**

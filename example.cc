@@ -46,15 +46,23 @@ void PrintTopology(std::ostream&os){
 }
 
 int main (int argc, const char* argv[]){
-  bayolau::affinity::ThreadPool::Instance();
+  using namespace bayolau::affinity;
+  ThreadPool::Instance();
   std::cout << "thread pool has "
-            <<  bayolau::affinity::ThreadPool::Instance().num_threads()
+            <<  ThreadPool::Instance().num_threads()
             << " threads" << std::endl;;
-  std::cout << "core idenfication " << bayolau::affinity::ThreadTopology::description() << std::endl;
+  std::cout << "core idenfication " << ThreadTopology::description() << std::endl;
+
+  std::vector<typename ThreadPool::Functor> work(10);
+  std::atomic<int> sum;
+  for(size_t ii = 0 ; ii < 10 ; ++ii){
+    work[ii] = std::bind(PrintTopology,std::ref(std::cout));
+  }
+  ThreadPool::Instance().Schedule(work.begin(),work.end());
+  std::this_thread::yield();
 
   for(size_t ii = 0 ; ii < 10 ; ++ii){
-    bayolau::affinity::ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
+    ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
     std::this_thread::yield();
   }
-
 }

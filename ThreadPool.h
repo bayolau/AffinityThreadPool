@@ -33,10 +33,10 @@ SOFTWARE.
 #include <utility>
 #include "Queue.h"
 #include "CpuTopology.h"
+#include "util.h"
 
 namespace bayolau {
 namespace affinity {
-
 /**
   * A quick-and-dirty thread pool implementation.
   * A singleton is intialized with one thread pinned to one physical core.
@@ -51,17 +51,10 @@ class ThreadPool{
   /**
     * a wrapper, if Functor. We use a non-callable functor as termination signal
     */
-  struct WorkPackage {
-    typedef std::function<void(void)> Functor;
-    WorkPackage():fcn_() {};
-    explicit WorkPackage(Functor fcn):fcn_(fcn) { }
-    bool terminate() const noexcept { return !fcn_; };
-    void operator()() { fcn_(); };
-  private:
-    Functor fcn_;
-  };
+  typedef typename std::function<void(void)> WorkPackage;
+  static bool Terminate(const WorkPackage& wp){ return !static_cast<bool>(wp); }
 public:
-  typedef typename WorkPackage::Functor Functor;
+  typedef WorkPackage Functor;
   /**
     * return the singleton instance, in my experience non-singleton would at
     * some point lead to accidental nesting, leading to subtle performance
@@ -70,6 +63,19 @@ public:
   static ThreadPool& Instance() {
     static ThreadPool instance; // this allocation is threadsafe for post-C++11 compiler
     return instance;
+  }
+
+  /**
+    * register units of work to be run
+    */
+  template<class Iterator>
+  void Schedule(Iterator begin, Iterator end) {
+    static_assert( std::is_same<typename Iterator::value_type,Functor>::value,
+                   "value type must be of Functor type");
+    auto begin_end = util::FilteredIterators(begin,end,
+                         [](const typename Iterator::value_type&val)
+                           {return static_cast<bool>(val);});
+    work_queue_.push(begin_end.first,begin_end.second);
   }
 
   /**
@@ -87,15 +93,14 @@ public:
   }
 
   ~ThreadPool() {
-    for(auto&entry : threads_){
-      work_queue_.push(WorkPackage());
-    }
+    std::vector<WorkPackage> kills(threads_.size());
+    work_queue_.push(kills.begin(),kills.end());
     for(auto&entry : threads_){
       entry.join();
     }
   }
 private:
-  bayolau::threadsafe::Queue< WorkPackage > work_queue_;
+  threadsafe::Queue< WorkPackage > work_queue_;
   std::vector<std::thread> threads_;
 
   ThreadPool(): work_queue_(), threads_()
@@ -115,7 +120,7 @@ private:
     start.wait();
     for(bool work = true ; work ; ){
       auto work_ptr = work_queue_.wait_and_pop();
-      work = !work_ptr->terminate();
+      work = !Terminate(*work_ptr);
       if(work){
         (*work_ptr)();
       }

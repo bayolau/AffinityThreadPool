@@ -56,7 +56,7 @@ struct CpuTopology{
   }
   
 private:
-  std::vector<bayolau::affinity::ThreadTopology> mask_topology_;
+  std::vector<affinity::ThreadTopology> mask_topology_;
   std::vector<unsigned> core_masks_;
 
   CpuTopology():mask_topology_(std::thread::hardware_concurrency()){

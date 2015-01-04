@@ -98,8 +98,9 @@ private:
 
 
 /**
-  * A quick-and-dirty thread pool implementation.
-  * A singleton is intialized with one thread pinned to one physical core.
+  * A simple thread pool implementation.
+  * An instance can has either 1) one thread pinned to one physical core, or 2) number
+  * of threads equal to the number of logical cores (with hyperthreading)
   * The scheduler takes a std::function<void(void)> callable as a work unit
   *
   * TODO
@@ -116,14 +117,29 @@ class ThreadPool{
 public:
   typedef std::function<void(void)> Functor;
   typedef typename Futures::Future Future;
+
   /**
-    * return the singleton instance, in my experience non-singleton would at
-    * some point lead to accidental nesting, leading to subtle performance
-    * decay, or even worst violating the number of threads set by ulimit
+    * Construct a threadpool
+    * @param pin_threads true to pin 1 thread to each physical core, false to create 1 thread per logical core
     */
-  static ThreadPool& Instance() {
-    static ThreadPool instance; // this allocation is threadsafe for post-C++11 compiler
-    return instance;
+  ThreadPool(bool pin_threads = true): work_queue_(), threads_(), pinned_(false)
+  {
+    const unsigned num_threads
+        = pin_threads ? CpuTopology::Instance().num_cores() : std::thread::hardware_concurrency();
+    threads_.reserve(num_threads);
+    std::promise<void> start_flag;
+    std::shared_future<void> sf = start_flag.get_future();
+    for(unsigned tt = 0 ; tt < num_threads ; ++tt){
+      threads_.emplace_back(&ThreadPool::Worker,this,sf);
+    }
+    if(pin_threads){
+      CpuTopology::Instance().SetAffinity(threads_);
+      pinned_ = true;
+    }
+    start_flag.set_value();
+    if( ++num_instances() > 1){
+      std::cerr << "WARNING: more than one ThreadPool has been instantiated" << std::endl;
+    }
   }
 
   /**
@@ -170,10 +186,17 @@ public:
   }
 
   /**
-    * register a unit of work to be run
+    * @return the number of threads
     */
   unsigned num_threads() const noexcept {
     return threads_.size();
+  }
+
+  /**
+    * @return if the underlying threads are pinned
+    */
+  bool pinned() const noexcept {
+    return pinned_;
   }
 
   ~ThreadPool() {
@@ -183,24 +206,24 @@ public:
     for(auto&entry : threads_){
       entry.join();
     }
+    --num_instances();
   }
+
+  ThreadPool(const ThreadPool&) = delete;
+  ThreadPool& operator= (const ThreadPool&) = delete;
+  //move will require more safety code, keep things simple for now
+  ThreadPool(ThreadPool&&) = delete;
+  ThreadPool& operator= (ThreadPool&&) = delete;
 
 private:
   threadsafe::Queue< WorkPackage > work_queue_;
   std::vector<std::thread> threads_;
+  bool pinned_;
 
-  ThreadPool(): work_queue_(), threads_()
-  {
-    const unsigned num_threads = CpuTopology::Instance().num_cores();
-    threads_.reserve(num_threads);
-    std::promise<void> start_flag;
-    std::shared_future<void> sf = start_flag.get_future();
-    for(unsigned tt = 0 ; tt < num_threads ; ++tt){
-      threads_.emplace_back(&ThreadPool::Worker,this,sf);
-    }
-    CpuTopology::Instance().SetAffinity(threads_);
-    start_flag.set_value();
-  }
+  static std::atomic<unsigned>& num_instances(){
+    static std::atomic<unsigned> counter;
+    return counter;
+  };
 
   void Worker(std::shared_future<void> start) {
     start.wait();

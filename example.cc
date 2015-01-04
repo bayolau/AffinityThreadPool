@@ -55,9 +55,9 @@ private:
 
 int main (int argc, const char* argv[]){
   using namespace bayolau::affinity;
-  ThreadPool::Instance();
+  ThreadPool threadpool;
   std::cout << "thread pool has "
-            <<  ThreadPool::Instance().num_threads()
+            <<  threadpool.num_threads()
             << " core-affined threads out of " << std::thread::hardware_concurrency()
             << " hardware threads " << std::endl;;
   std::cout << "core idenfication " << ThreadTopology::description() << std::endl;
@@ -67,11 +67,11 @@ int main (int argc, const char* argv[]){
   for(size_t ii = 0 ; ii < 10 ; ++ii){
     work[ii] = Adder(ii,sum);
   }
-  Futures futures = ThreadPool::Instance().Schedule(work.begin(),work.end());
+  Futures futures = threadpool.Schedule(work.begin(),work.end());
   std::this_thread::yield();
 
   for(size_t ii = 0 ; ii < 10 ; ++ii){
-    futures += ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
+    futures += threadpool.Schedule(std::bind(PrintTopology,std::ref(std::cout)));
     std::this_thread::yield();
   }
   futures.wait();

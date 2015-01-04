@@ -22,8 +22,9 @@ using namespace bayolau::affinity;
 std::vector<std::function<void(void)> > work;
 .
 .
-Futures futures = ThreadPool::Instance().Schedule(work.begin(),work.end());
-futures += ThreadPool::Instance().Schedule([]{});
+ThreadPool threadpool;
+Futures futures = threadpool.Schedule(work.begin(),work.end());
+futures += threadpool.Schedule([]{});
 futures.wait();
 ```
 
@@ -32,8 +33,11 @@ Example output on AWS c3.8xlarge instance:
 ```
 $g++ -std=c++11 -lpthread example.cc -o example
 $./example
+
 thread pool has 16 core-affined threads out of 32 hardware threads 
+
 core idenfication 2xAPIC: logical_id core_id package_id ...
+
 worker's core toplogy 4: 0 2 0
 worker's core toplogy 10: 0 5 0
 worker's core toplogy 4: 0 2 0
@@ -44,5 +48,6 @@ worker's core toplogy 8: 0 4 0
 worker's core toplogy 0: 0 0 0
 worker's core toplogy 6: 0 3 0
 worker's core toplogy 2: 0 1 0
+
 distributed sum of 0..9 = 45
 ```

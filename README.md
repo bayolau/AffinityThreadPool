@@ -3,7 +3,6 @@ AffinityThreadPool
 
 Usage: needs to include only ThreadPool.h, see example.cc
 
-$g++ -std=c++11 -lpthread example.cc -o example
 
 Description:
 
@@ -17,3 +16,22 @@ The standard-only aspect is motivated by "effective" protability. From my past e
 
 Of course, the main motivation is that this is something I've been wanting to write for the sake of it for a long time.
 
+Example Output on AWS c3.8xlarge instance:
+
+```
+$g++ -std=c++11 -lpthread example.cc -o example
+$./example
+thread pool has 16 core-affined threads out of 32 hardware threads 
+core idenfication 2xAPIC: logical_id core_id package_id ...
+worker's core toplogy 4: 0 2 0
+worker's core toplogy 10: 0 5 0
+worker's core toplogy 4: 0 2 0
+worker's core toplogy 12: 0 6 0
+worker's core toplogy 10: 0 5 0
+worker's core toplogy 14: 0 7 0
+worker's core toplogy 8: 0 4 0
+worker's core toplogy 0: 0 0 0
+worker's core toplogy 6: 0 3 0
+worker's core toplogy 2: 0 1 0
+distributed sum of 0..9 = 45
+'''

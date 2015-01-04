@@ -58,10 +58,11 @@ int main (int argc, const char* argv[]){
   ThreadPool::Instance();
   std::cout << "thread pool has "
             <<  ThreadPool::Instance().num_threads()
-            << " threads" << std::endl;;
+            << " core-affined threads out of " << std::thread::hardware_concurrency()
+            << " hardware threads " << std::endl;;
   std::cout << "core idenfication " << ThreadTopology::description() << std::endl;
 
-  std::vector<typename ThreadPool::Functor> work(10);
+  std::vector<std::function<void(void)> > work(10);
   std::atomic<int> sum(0);
   for(size_t ii = 0 ; ii < 10 ; ++ii){
     work[ii] = Adder(ii,sum);
@@ -74,5 +75,5 @@ int main (int argc, const char* argv[]){
     std::this_thread::yield();
   }
   futures.wait();
-  std::cout << "sum " << sum.load() <<std::endl;
+  std::cout << "distributed sum of 0..9 = " << sum.load() <<std::endl;
 }

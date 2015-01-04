@@ -19,10 +19,11 @@ Usage: see example.cc
 using namespace bayolau::affinity;
 .
 .
-std::vector<typename ThreadPool::Functor> work;
+std::vector<std::function<void(void)> > work;
 .
 .
 Futures futures = ThreadPool::Instance().Schedule(work.begin(),work.end());
+futures += ThreadPool::Instance().Schedule([]{});
 futures.wait();
 ```
 

@@ -16,7 +16,6 @@ The standard-only aspect is motivated by "effective" protability. From my past e
 Usage: see example.cc
 ```c++
 #include "ThreadPool.h"
-using namespace bayolau::affinity;
 .
 .
 std::vector<std::function<void(void)> > work;

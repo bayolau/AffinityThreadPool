@@ -1,7 +1,6 @@
 AffinityThreadPool
 ==================
 
-Usage: needs to include only ThreadPool.h, see example.cc
 
 
 Description:
@@ -14,9 +13,20 @@ The affinity aspect is motivated by performance issues I've seen in the past. Th
 
 The standard-only aspect is motivated by "effective" protability. From my past experience, open-source package written for physics and biology are deployed by organizations without DevOps, and adding requirements such as Boost/Cilk/TBB have in the past cause tremendous maintainance headaches.
 
-Of course, the main motivation is that this is something I've been wanting to write for the sake of it for a long time.
+Usage: see example.cc
+```c++
+#include "ThreadPool.h"
+using namespace bayolau::affinity;
+.
+.
+std::vector<typename ThreadPool::Functor> work;
+.
+.
+Futures futures = ThreadPool::Instance().Schedule(work.begin(),work.end());
+futures.wait();
+```
 
-Example Output on AWS c3.8xlarge instance:
+Example output on AWS c3.8xlarge instance:
 
 ```
 $g++ -std=c++11 -lpthread example.cc -o example
@@ -34,4 +44,4 @@ worker's core toplogy 0: 0 0 0
 worker's core toplogy 6: 0 3 0
 worker's core toplogy 2: 0 1 0
 distributed sum of 0..9 = 45
-'''
+```

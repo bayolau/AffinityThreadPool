@@ -177,6 +177,22 @@ public:
   }
 
   /**
+    * Try to pop from work queue and work.
+    * @return true if a termination signal is not detected
+    */
+  bool TryWork() {
+    auto work_ptr = work_queue_.pop();
+    if( not work_ptr )
+      return true;
+    if( Terminate(*work_ptr) ) { // restore termination signal
+      work_queue_.push(std::move(work_ptr));
+      return false;
+    }
+    (*work_ptr)();
+    return true;
+  }
+
+  /**
     * wait til all tasks are done. will be replaced by futures
     */
   void Wait()const{
@@ -214,6 +230,7 @@ public:
   //move will require more safety code, keep things simple for now
   ThreadPool(ThreadPool&&) = delete;
   ThreadPool& operator= (ThreadPool&&) = delete;
+
 
 private:
   threadsafe::Queue< WorkPackage > work_queue_;

@@ -76,8 +76,11 @@ struct Queue{
     */
   bool push(T&& val) {
     DataPtr ptr( new T(std::forward<T>(val)) );
+    return push(std::move(ptr));
+  }
+  bool push(DataPtr&& val) {
     std::lock_guard<std::mutex> lg(lk_);
-    impl_.push_back(std::move(ptr));
+    impl_.push_back(std::forward<DataPtr>(val));
     cv_.notify_one();
     return false;
   }

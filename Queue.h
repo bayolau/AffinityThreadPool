@@ -61,7 +61,12 @@ struct Queue{
     impl_.insert(impl_.end(),
                  std::make_move_iterator(ptrs.begin()),
                  std::make_move_iterator(ptrs.end()));
-    cv_.notify_all();
+    if(num_elements == 1) {
+      cv_.notify_one();
+    }
+    else {
+      cv_.notify_all();
+    }
     return false;
   }
 
@@ -73,7 +78,7 @@ struct Queue{
     DataPtr ptr( new T(std::forward<T>(val)) );
     std::lock_guard<std::mutex> lg(lk_);
     impl_.push_back(std::move(ptr));
-    cv_.notify_all();
+    cv_.notify_one();
     return false;
   }
 
@@ -94,11 +99,16 @@ struct Queue{
     * @return a smart pointer to the popped element
     */
   DataPtr wait_and_pop() {
-    std::unique_lock<std::mutex> lg(lk_);
-    cv_.wait(lg,[this]{return !impl_.empty();});
-    DataPtr out(std::move(impl_.front()));
-    impl_.pop_front();
-    return out;
+    for( std::unique_lock<std::mutex> lg(lk_)
+       ; /*loops until return*/
+       ; cv_.wait(lg,[this]{return !impl_.empty();})
+       ){
+      if( !impl_.empty() ){
+        DataPtr out(std::move(impl_.front()));
+        impl_.pop_front();
+        return out;
+      }
+    }
   }
 
   /**

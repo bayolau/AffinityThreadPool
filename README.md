@@ -22,8 +22,8 @@ using namespace bayolau::affinity;
 std::vector<std::function<void(void)> > work;
 .
 .
-ThreadPool threadpool;
-Futures futures = threadpool.Schedule(work.begin(),work.end());
+bayolau::affinity::ThreadPool threadpool;
+auto futures = threadpool.Schedule(work.begin(),work.end());
 futures += threadpool.Schedule([]{});
 futures.wait();
 ```

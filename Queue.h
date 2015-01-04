@@ -52,13 +52,15 @@ struct Queue{
     const int64_t num_elements = std::distance(begin,end);
     if(num_elements < 1) return true;
     std::vector<DataPtr> ptrs(num_elements);
-    std::transform(begin, end, ptrs.begin(),[](const T&val){
-      return DataPtr(new T(val));
-    });
-
+    std::transform(begin, end,
+                   ptrs.begin(),
+                   [](T&&val){
+                     return DataPtr(new T(std::forward<T>(val)));
+                   });
     std::lock_guard<std::mutex> lg(lk_);
-    typedef std::move_iterator<typename std::vector<DataPtr>::iterator> MvIter;
-    impl_.insert(impl_.end(), MvIter(ptrs.begin()), MvIter(ptrs.end()));
+    impl_.insert(impl_.end(),
+                 std::make_move_iterator(ptrs.begin()),
+                 std::make_move_iterator(ptrs.end()));
     cv_.notify_all();
     return false;
   }
@@ -67,8 +69,8 @@ struct Queue{
     * push value to the back of the queue
     * @return true if error occurs
     */
-  bool push(T val) {
-    DataPtr ptr( new T(std::move(val)) );
+  bool push(T&& val) {
+    DataPtr ptr( new T(std::forward<T>(val)) );
     std::lock_guard<std::mutex> lg(lk_);
     impl_.push_back(std::move(ptr));
     cv_.notify_all();

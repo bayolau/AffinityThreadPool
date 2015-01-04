@@ -58,7 +58,7 @@ struct FilteredIterator{
   FilteredIterator(Iterator curr, Iterator end, Predicate p)
     : curr_(curr), end_(end), pred_(p) {}
 
-  reference operator*() { return *curr_; }
+  reference operator*() const { return *curr_; }
 
   FilteredIterator& operator++() {
     for(++curr_ ; curr_!=end_ and not pred_(*curr_) ; ++curr_) { }

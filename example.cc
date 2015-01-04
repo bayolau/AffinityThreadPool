@@ -66,13 +66,13 @@ int main (int argc, const char* argv[]){
   for(size_t ii = 0 ; ii < 10 ; ++ii){
     work[ii] = Adder(ii,sum);
   }
-  ThreadPool::Instance().Schedule(work.begin(),work.end());
+  Futures futures = ThreadPool::Instance().Schedule(work.begin(),work.end());
   std::this_thread::yield();
 
   for(size_t ii = 0 ; ii < 10 ; ++ii){
-    ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
+    futures += ThreadPool::Instance().Schedule(std::bind(PrintTopology,std::ref(std::cout)));
     std::this_thread::yield();
   }
-  ThreadPool::Instance().Wait();
+  futures.wait();
   std::cout << "sum " << sum.load() <<std::endl;
 }
